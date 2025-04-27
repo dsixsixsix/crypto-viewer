@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import SearchBar from './components/SearchBar'
 import CryptoCard from './components/CryptoCard'
 import styled from 'styled-components'
+import { FaUser } from 'react-icons/fa'
+import Profile from './pages/Profile'
 
 const AppContainer = styled.div`
   min-height: 100vh;
@@ -124,9 +127,8 @@ const ChartContainer = styled.div`
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 20px;
   display: ${props => props.show ? 'block' : 'none'};
-  position: fixed;
-  top: 420px;
-  margin-top: 18px;
+  position: sticky;
+  top: 430px;
   overflow: hidden;
 `
 
@@ -234,6 +236,38 @@ const Logo = styled.img`
   display: block;
 `
 
+const Header = styled.header`
+  background-color: #000;
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -20px -20px 20px -20px;
+  border-radius: 12px 12px 0 0;
+`
+
+const SiteTitle = styled.h1`
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0;
+  letter-spacing: 2px;
+  
+  span {
+    color: #4CAF50;
+  }
+`
+
+const UserIcon = styled(FaUser)`
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #4CAF50;
+  }
+`
+
 const popularCryptos = [
   'bitcoin',
   'ethereum',
@@ -262,13 +296,18 @@ const popularCryptos = [
   'tezos'
 ]
 
-function App() {
+function AppContent() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('')
   const [cryptoList, setCryptoList] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selectedCrypto, setSelectedCrypto] = useState(null)
   const [cryptoDetails, setCryptoDetails] = useState(null)
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
 
   const loadPopularCryptos = async () => {
     setLoading(true)
@@ -358,6 +397,14 @@ function App() {
     loadPopularCryptos()
   }, [])
 
+  // Add new useEffect to select first crypto when list is loaded
+  useEffect(() => {
+    if (cryptoList.length > 0 && !selectedCrypto) {
+      setSelectedCrypto(cryptoList[0])
+      setCryptoDetails(cryptoList[0])
+    }
+  }, [cryptoList, selectedCrypto])
+
   const handleCryptoClick = (crypto) => {
     setSelectedCrypto(crypto)
     setCryptoDetails(crypto)
@@ -412,6 +459,10 @@ function App() {
 
   return (
     <AppContainer>
+      <Header>
+        <SiteTitle>CRYPTO<span>RR</span></SiteTitle>
+        <UserIcon onClick={handleProfileClick} />
+      </Header>
       <ContentWrapper>
         <MainContent>
           <SearchContainer>
@@ -526,6 +577,17 @@ function App() {
         </RightPanel>
       </ContentWrapper>
     </AppContainer>
+  )
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<AppContent />} />
+        <Route path="/profile" element={<Profile />} />
+      </Routes>
+    </Router>
   )
 }
 
