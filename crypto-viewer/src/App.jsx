@@ -141,11 +141,8 @@ const RightPanel = styled.div`
 const CardsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
+  gap: 16px;
+  margin-top: 20px;
 `
 
 const RetryButton = styled.button`
@@ -298,164 +295,108 @@ const popularCryptos = [
 
 function AppContent() {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('')
-  const [cryptoList, setCryptoList] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [selectedCrypto, setSelectedCrypto] = useState(null)
-  const [cryptoDetails, setCryptoDetails] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCurrency, setSelectedCurrency] = useState('usd');
+  const [isLoading, setIsLoading] = useState(false);
+  const [cryptoData, setCryptoData] = useState([]);
+  const [selectedCrypto, setSelectedCrypto] = useState(null);
+  const [showSidePanel, setShowSidePanel] = useState(false);
 
   const handleProfileClick = () => {
     navigate('/profile');
   };
 
-  const loadPopularCryptos = async () => {
-    setLoading(true)
-    setError(null)
-    
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsLoading(true);
     try {
-      console.log('Starting to load popular cryptos...')
-      
-      // Добавляем задержку перед запросом
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      const response = await axios.get(
+        `https://api.coingecko.com/api/v3/search?query=${searchQuery}`
+      );
+      const cryptoIds = response.data.coins.map(coin => coin.id).join(',');
+      const priceResponse = await axios.get(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=${selectedCurrency}&include_24hr_change=true`
+      );
+      const cryptoData = response.data.coins.map(coin => ({
+        id: coin.id,
+        name: coin.name,
+        symbol: coin.symbol,
+        image: coin.large,
+        current_price: priceResponse.data[coin.id]?.[selectedCurrency] || 0,
+        price_change_percentage_24h: priceResponse.data[coin.id]?.[`${selectedCurrency}_24h_change`] || 0,
+        market_cap: 0,
+        total_volume: 0,
+        high_24h: 0,
+        low_24h: 0
+      }));
+      setCryptoData(cryptoData);
+      if (cryptoData.length > 0) {
+        setSelectedCrypto(cryptoData[0]);
+      }
+    } catch (error) {
+      console.error('Ошибка при поиске криптовалют:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadPopularCryptos = async () => {
+    setIsLoading(true);
+    try {
       const response = await axios.get(
         'https://api.coingecko.com/api/v3/coins/markets',
         {
           params: {
-            vs_currency: 'usd',
-            ids: popularCryptos.join(','),
+            vs_currency: selectedCurrency,
             order: 'market_cap_desc',
-            per_page: 100,
+            per_page: 10,
             page: 1,
             sparkline: false
-          },
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0'
-          },
-          timeout: 10000 // 10 секунд таймаут
+          }
         }
-      )
-
-      console.log('API Response:', response)
-
-      if (!response.data) {
-        throw new Error('No data received from API')
+      );
+      const cryptoData = response.data.map(coin => ({
+        id: coin.id,
+        name: coin.name,
+        symbol: coin.symbol,
+        image: coin.image,
+        current_price: coin.current_price,
+        price_change_percentage_24h: coin.price_change_percentage_24h,
+        market_cap: coin.market_cap,
+        total_volume: coin.total_volume,
+        high_24h: coin.high_24h,
+        low_24h: coin.low_24h
+      }));
+      setCryptoData(cryptoData);
+      if (cryptoData.length > 0) {
+        setSelectedCrypto(cryptoData[0]);
       }
-
-      if (!Array.isArray(response.data)) {
-        throw new Error('Invalid response format: expected array')
-      }
-
-      if (response.data.length === 0) {
-        throw new Error('Empty response from API')
-      }
-
-      const results = response.data.map(crypto => ({
-        id: crypto.id,
-        name: crypto.name,
-        symbol: crypto.symbol.toUpperCase(),
-        price: crypto.current_price,
-        priceChange: crypto.price_change_percentage_24h,
-        logo: crypto.image,
-        marketCap: crypto.market_cap,
-        volume: crypto.total_volume,
-        high24h: crypto.high_24h,
-        low24h: crypto.low_24h
-      }))
-
-      console.log('Successfully processed cryptos:', results.length)
-      setCryptoList(results)
-      
-    } catch (err) {
-      console.error('Error loading cryptos:', err)
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        code: err.code
-      })
-      
-      if (err.code === 'ECONNABORTED') {
-        setError('Request timed out. Please check your internet connection and try again.')
-      } else if (err.response?.status === 429) {
-        setError('API rate limit exceeded. Please wait a minute and try again.')
-      } else if (err.response?.status === 404) {
-        setError('API endpoint not found. Please try again later.')
-      } else if (err.message === 'Network Error') {
-        setError('Network error. Please check your internet connection and try again.')
-      } else {
-        setError(`Failed to load cryptocurrencies: ${err.message}. Please try again later.`)
-      }
+    } catch (error) {
+      console.error('Error loading popular cryptos:', error);
     } finally {
-      setLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    loadPopularCryptos()
-  }, [])
-
-  // Add new useEffect to select first crypto when list is loaded
-  useEffect(() => {
-    if (cryptoList.length > 0 && !selectedCrypto) {
-      setSelectedCrypto(cryptoList[0])
-      setCryptoDetails(cryptoList[0])
-    }
-  }, [cryptoList, selectedCrypto])
+    loadPopularCryptos();
+  }, [selectedCurrency]);
 
   const handleCryptoClick = (crypto) => {
-    setSelectedCrypto(crypto)
-    setCryptoDetails(crypto)
-  }
+    setSelectedCrypto(crypto);
+  };
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      setError('Please enter a cryptocurrency name')
-      return
-    }
-    
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const response = await axios.get(
-        `https://api.coingecko.com/api/v3/coins/${searchTerm.toLowerCase()}`
-      )
-      
-      if (!response.data) {
-        setError('Cryptocurrency not found')
-        return
-      }
+  const formatNumber = (number) => {
+    return number.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
 
-      const newCrypto = {
-        id: response.data.id,
-        name: response.data.name,
-        symbol: response.data.symbol.toUpperCase(),
-        price: response.data.market_data.current_price.usd,
-        priceChange: response.data.market_data.price_change_percentage_24h,
-        logo: response.data.image.small,
-        marketCap: response.data.market_data.market_cap.usd,
-        volume: response.data.market_data.total_volume.usd,
-        high24h: response.data.market_data.high_24h.usd,
-        low24h: response.data.market_data.low_24h.usd
-      }
-
-      setCryptoList(prevList => {
-        const exists = prevList.some(crypto => crypto.id === newCrypto.id)
-        if (exists) {
-          setError('This cryptocurrency is already in the list')
-          return prevList
-        }
-        return [...prevList, newCrypto]
-      })
-    } catch (err) {
-      setError('Cryptocurrency not found')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const formatLargeNumber = (number, suffix) => {
+    const value = number / (suffix === 'B' ? 1000000000 : 1000000);
+    return `${value.toFixed(2)}${suffix}`;
+  };
 
   return (
     <AppContainer>
@@ -467,36 +408,36 @@ function AppContent() {
         <MainContent>
           <SearchContainer>
             <SearchBar
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              disabled={loading}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              disabled={isLoading}
+              currency={selectedCurrency}
+              onCurrencyChange={(e) => setSelectedCurrency(e.target.value)}
             />
-            
-            {loading && <p>Loading...</p>}
-            {error && (
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ color: 'red' }}>{error}</p>
-                <RetryButton onClick={loadPopularCryptos}>
-                  Попробовать снова
-                </RetryButton>
-              </div>
-            )}
+            {isLoading && <p style={{ textAlign: 'center' }}>Загрузка...</p>}
           </SearchContainer>
           
           <CardsList>
-            {cryptoList.length > 0 ? (
-              cryptoList.map(crypto => (
+            {cryptoData.length > 0 ? (
+              cryptoData.map(crypto => (
                 <div 
                   key={crypto.id}
                   onClick={() => handleCryptoClick(crypto)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <CryptoCard {...crypto} />
+                  <CryptoCard
+                    name={crypto.name}
+                    symbol={crypto.symbol}
+                    price={crypto.current_price}
+                    priceChange={crypto.price_change_percentage_24h}
+                    image={crypto.image}
+                    currency={selectedCurrency}
+                  />
                 </div>
               ))
             ) : (
-              !loading && <p style={{ textAlign: 'center' }}>No cryptocurrencies loaded</p>
+              !isLoading && <p style={{ textAlign: 'center' }}>Криптовалюты не найдены</p>
             )}
           </CardsList>
         </MainContent>
@@ -506,36 +447,47 @@ function AppContent() {
             {selectedCrypto && (
               <>
                 <SidePanelHeader>
-                  <SidePanelLogo src={selectedCrypto.logo} alt={`${selectedCrypto.name} logo`} />
+                  <SidePanelLogo src={selectedCrypto.image} alt={`${selectedCrypto.name} logo`} />
                   <div>
                     <SidePanelTitle>{selectedCrypto.name}</SidePanelTitle>
-                    <SidePanelSymbol>{selectedCrypto.symbol}</SidePanelSymbol>
+                    <SidePanelSymbol>{selectedCrypto.symbol.toUpperCase()}</SidePanelSymbol>
                   </div>
                 </SidePanelHeader>
 
                 <InfoGrid>
                   <InfoItem>
                     <InfoLabel>Price</InfoLabel>
-                    <InfoValue>${selectedCrypto.price.toLocaleString()}</InfoValue>
-                    <PriceChange isPositive={selectedCrypto.priceChange >= 0}>
-                      {selectedCrypto.priceChange >= 0 ? '+' : ''}{selectedCrypto.priceChange.toFixed(2)}%
+                    <InfoValue>
+                      {selectedCurrency.toUpperCase()} {formatNumber(selectedCrypto.current_price)}
+                    </InfoValue>
+                    <PriceChange isPositive={selectedCrypto.price_change_percentage_24h >= 0}>
+                      {selectedCrypto.price_change_percentage_24h >= 0 ? '+' : ''}
+                      {selectedCrypto.price_change_percentage_24h.toFixed(2)}%
                     </PriceChange>
                   </InfoItem>
                   <InfoItem>
                     <InfoLabel>Market Cap</InfoLabel>
-                    <InfoValue>${(selectedCrypto.marketCap / 1000000000).toFixed(2)}B</InfoValue>
+                    <InfoValue>
+                      {selectedCurrency.toUpperCase()} {formatLargeNumber(selectedCrypto.market_cap, 'B')}
+                    </InfoValue>
                   </InfoItem>
                   <InfoItem>
                     <InfoLabel>24h Volume</InfoLabel>
-                    <InfoValue>${(selectedCrypto.volume / 1000000).toFixed(2)}M</InfoValue>
+                    <InfoValue>
+                      {selectedCurrency.toUpperCase()} {formatLargeNumber(selectedCrypto.total_volume, 'M')}
+                    </InfoValue>
                   </InfoItem>
                   <InfoItem>
                     <InfoLabel>24h High</InfoLabel>
-                    <InfoValue>${selectedCrypto.high24h.toLocaleString()}</InfoValue>
+                    <InfoValue>
+                      {selectedCurrency.toUpperCase()} {formatNumber(selectedCrypto.high_24h)}
+                    </InfoValue>
                   </InfoItem>
                   <InfoItem>
                     <InfoLabel>24h Low</InfoLabel>
-                    <InfoValue>${selectedCrypto.low24h.toLocaleString()}</InfoValue>
+                    <InfoValue>
+                      {selectedCurrency.toUpperCase()} {formatNumber(selectedCrypto.low_24h)}
+                    </InfoValue>
                   </InfoItem>
                 </InfoGrid>
               </>
@@ -553,18 +505,18 @@ function AppContent() {
           </ChartContainer>
 
           <InfoWindow>
-            <InfoTitle>О нас</InfoTitle>
-            <InfoText>Мы работаем с 2010 года, предоставляя актуальную информацию о криптовалютах и рынке.</InfoText>
-            <InfoText>Наша миссия - сделать криптовалюты доступными и понятными для всех.</InfoText>
-            <InfoText>Наш сайт предлагает широкий спектр услуг, включая отслеживание курсов криптовалют,</InfoText>
-            <InfoText>аналитику рынка и образовательные материалы.</InfoText>
-            <InfoText>Мы гордимся тем, что помогаем нашим пользователям принимать обоснованные решения в мире криптовалют.</InfoText>
-            <InfoText>Наша команда состоит из опытных специалистов, которые следят за последними тенденциями в мире криптовалют.</InfoText>
-            <InfoText>Мы стремимся предоставлять нашим пользователям самую актуальную и полезную информацию.</InfoText>
+            <InfoTitle>About Us</InfoTitle>
+            <InfoText>We provide up-to-date information about cryptocurrencies and the market.</InfoText>
+            <InfoText>Our mission is to make cryptocurrencies accessible and understandable for everyone.</InfoText>
+            <InfoText>Our website offers a wide range of services, including cryptocurrency price tracking,</InfoText>
+            <InfoText>market analysis, and educational materials.</InfoText>
+            <InfoText>We are proud to help our users make informed decisions in the world of cryptocurrencies.</InfoText>
+            <InfoText>Our team consists of experienced specialists who follow the latest trends in the cryptocurrency world.</InfoText>
+            <InfoText>We strive to provide our users with the most relevant and useful information.</InfoText>
             
             <ContactInfo>
-              <ContactItem>Главный офис: ул. Криптовалютная, 123, г. Криптоград</ContactItem>
-              <ContactItem>Телефон поддержки: +1 (234) 567-890</ContactItem>
+              <ContactItem>Head Office: Crypto Street, 123, Cryptograd</ContactItem>
+              <ContactItem>Support Phone: +1 (234) 567-890</ContactItem>
               <ContactItem>Email: support@cryptoviewer.com</ContactItem>
             </ContactInfo>
             
@@ -577,7 +529,7 @@ function AppContent() {
         </RightPanel>
       </ContentWrapper>
     </AppContainer>
-  )
+  );
 }
 
 function App() {
@@ -588,7 +540,7 @@ function App() {
         <Route path="/profile" element={<Profile />} />
       </Routes>
     </Router>
-  )
+  );
 }
 
-export default App
+export default App;

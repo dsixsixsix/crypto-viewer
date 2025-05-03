@@ -55,23 +55,35 @@ const Price = styled.div`
 const PriceChange = styled.div`
   font-size: 12px;
   color: ${props => props.isPositive ? '#4CAF50' : '#F44336'};
-  margin-top: 2px;
+  margin-top: 4px;
 `;
 
-const CryptoCard = ({ name, symbol, price, priceChange, logo }) => {
-  const isPositive = priceChange >= 0;
-  const formattedPriceChange = `${isPositive ? '+' : ''}${priceChange.toFixed(2)}%`;
+const CryptoCard = ({ name, symbol, price, priceChange, image, currency = 'rub' }) => {
+  const currencySymbols = {
+    rub: '₽',
+    usd: '$',
+    eur: '€'
+  };
+
+  const formatNumber = (number) => {
+    return number.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
 
   return (
     <CardContainer>
-      <Logo src={logo} alt={`${name} logo`} />
+      <Logo src={image} alt={`${name} logo`} />
       <InfoContainer>
         <Name>{name}</Name>
-        <Symbol>{symbol}</Symbol>
+        <Symbol>{symbol.toUpperCase()}</Symbol>
       </InfoContainer>
       <PriceContainer>
-        <Price>${price.toLocaleString()}</Price>
-        <PriceChange isPositive={isPositive}>{formattedPriceChange}</PriceChange>
+        <Price>{currencySymbols[currency]}{formatNumber(price)}</Price>
+        <PriceChange isPositive={priceChange >= 0}>
+          {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
+        </PriceChange>
       </PriceContainer>
     </CardContainer>
   );
