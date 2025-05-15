@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { FaChevronDown } from 'react-icons/fa';
+import { FaAngleDown } from 'react-icons/fa';
 
 export const Logo = styled.img`
   position: absolute;
@@ -19,16 +19,19 @@ export const SearchIconImg = styled.img`
   padding: 10px;
 `;
 
-export const DropdownIcon = styled(FaChevronDown)`
-  font-size: 8px;
+export const DropdownIcon = styled.img.attrs({ src: '/dropdownicon.svg', alt: 'dropdown' })`
+  width: 7px;
+  height: 4px;
   position: absolute;
-  right: 8px;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%) ${props => props.open ? 'rotate(180deg)' : 'rotate(0deg)'};
   transition: transform 0.2s;
-  transform: ${props => props.open ? 'rotate(180deg)' : 'rotate(0deg)'};
 `;
 
-export const DropdownItemIcon = styled(FaChevronDown)`
-  font-size: 8px;
+export const DropdownItemIcon = styled.img.attrs({ src: '/dropdownicon.svg', alt: 'dropdown' })`
+  width: 14px;
+  height: 8px;
   margin-left: 6px;
   transform: rotate(180deg);
 `; 

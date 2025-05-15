@@ -29,7 +29,7 @@ export const Name = styled.div`
 export const Symbol = styled.div`
   font-family: 'Circular Std', 'Inter', 'Arial', sans-serif;
   font-weight: 450;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 100%;
   letter-spacing: 0;
   color: rgba(108, 117, 125, 1);
@@ -42,14 +42,15 @@ export const Symbol = styled.div`
 
 export const Price = styled.div`
   font-family: 'Circular Std', 'Inter', 'Arial', sans-serif;
-  font-weight: 500;
+  font-weight: 450;
   font-size: 16px;
   color: #232323;
   line-height: 100%;
 `;
 
 export const PriceChange = styled.div`
-  font-size: 14px;
+  font-size: 10px;
+  font-weight: 500;
   color: ${props => props.isPositive ? 'rgba(33, 191, 115, 1)' : 'rgba(217, 4, 41, 1)'};
 `;
 

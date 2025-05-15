@@ -3,8 +3,7 @@ import styled from 'styled-components';
 import axios from 'axios';
 import dayjs from 'dayjs';
 
-// ВСТАВЬТЕ СЮДА СВОЙ КЛЮЧ (можно временно без ключа, но лучше получить бесплатный на https://min-api.cryptocompare.com/)
-const CRYPTOCOMPARE_API_KEY = '';
+// Используем CoinGecko API (не требует ключа)
 
 const ChartWrapper = styled.div`
   width: 100%;
@@ -45,6 +44,14 @@ const RangeButton = styled.button`
     background: rgba(236, 244, 255, 1);
     border: 1px solid rgba(0, 99, 245, 1);
     color: rgba(0, 99, 245, 1);
+  }
+  &:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  &:active {
+    outline: none;
+    box-shadow: none;
   }
 `;
 
@@ -163,25 +170,34 @@ const Chart = ({ symbol = '', currency = 'usd' }) => {
   useEffect(() => {
     if (!symbol) return;
     const selectedRange = ranges.find(r => r.value === range) || ranges[0];
+    // Маппинг диапазонов на параметры CoinGecko
+    let days = '1';
+    let interval = 'hourly';
+    if (range === '1h') { days = '1'; interval = 'minutely'; }
+    if (range === '24h') { days = '1'; interval = 'hourly'; }
+    if (range === '7') { days = '7'; interval = 'hourly'; }
+    if (range === '30') { days = '30'; interval = 'daily'; }
+    if (range === '180') { days = '180'; interval = 'daily'; }
+    if (range === '365') { days = '365'; interval = 'daily'; }
+    if (range === 'max') { days = 'max'; interval = 'daily'; }
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const endpoint = selectedRange.endpoint;
-        const limit = selectedRange.limit;
-        const aggregate = selectedRange.aggregate;
-        const url = `https://min-api.cryptocompare.com/data/v2/${endpoint}`;
+        // symbol теперь это id монеты (например, 'bitcoin')
+        const proxy = 'https://thingproxy.freeboard.io/fetch/';
+        const url = proxy + `https://api.coingecko.com/api/v3/coins/${symbol.toLowerCase()}/market_chart`;
         const params = {
-          fsym: symbol.toUpperCase(),
-          tsym: currency.toUpperCase(),
-          limit,
-          aggregate
+          vs_currency: currency.toLowerCase(),
+          days,
+          interval
         };
-        const headers = CRYPTOCOMPARE_API_KEY ? { authorization: `Apikey ${CRYPTOCOMPARE_API_KEY}` } : {};
-        const res = await axios.get(url, { params, headers });
-        const data = res.data.Data.Data;
-        setChartData(data);
-        const priceArr = data.map(p => p.close);
+        const res = await axios.get(url, { params });
+        // CoinGecko возвращает массив [timestamp, price]
+        const pricesArr = res.data.prices.map(([time, close]) => ({ time: Math.floor(time / 1000), close }));
+        setChartData(pricesArr);
+        const priceArr = pricesArr.map(p => p.close);
         setPrices(priceArr);
         setMin(Math.min(...priceArr));
         setMax(Math.max(...priceArr));
@@ -189,7 +205,7 @@ const Chart = ({ symbol = '', currency = 'usd' }) => {
         setPrices([]);
         setMin(null);
         setMax(null);
-        setError(e.message || (e.response && e.response.data && e.response.data.Message) || 'Unknown error');
+        setError(e.message || (e.response && e.response.data && e.response.data.error) || 'Unknown error');
         console.error('Chart API error:', e);
       } finally {
         setLoading(false);

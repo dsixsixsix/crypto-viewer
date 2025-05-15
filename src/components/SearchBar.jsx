@@ -45,7 +45,7 @@ const SearchBar = ({ value, onChange, onSearch, selectedCurrency, onCurrencyChan
       <ControlsContainer>
         <Title>Coins</Title>
         <DropdownWrapper ref={ref}>
-          <DropdownButton onClick={() => setOpen(o => !o)}>
+          <DropdownButton open={open} onClick={() => setOpen(o => !o)}>
             <DropdownButtonText>{selectedOption.label}</DropdownButtonText>
             <DropdownIcon open={open} />
           </DropdownButton>

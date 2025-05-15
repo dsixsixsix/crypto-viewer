@@ -130,7 +130,7 @@ const PriceChange = styled.div`
   font-family: 'Circular Std', 'Inter', 'Arial', sans-serif;
   font-size: 16px;
   font-weight: 450;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
   color: ${props => props.isPositive ? 'rgba(33, 191, 115, 1)' : 'rgba(217, 4, 41, 1)'};
 `
 
@@ -243,7 +243,7 @@ function CryptoPage() {
                   {isPositive ? '+ ' : '- '}{formatNumber(Math.abs(priceChangeAbs))} ({priceChangePerc ? priceChangePerc.toFixed(2) : '0.00'}%)
                 </PriceChange>
               </PriceRow>
-              <Chart symbol={selected.symbol} currency={selectedCurrency} />
+              <Chart symbol={selected.id} currency={selectedCurrency} />
             </>
           )
         )}

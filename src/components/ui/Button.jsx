@@ -52,19 +52,31 @@ export const DropdownButton = styled(Button)`
   height: 24px;
   padding: 0 12px;
   background: rgba(248, 249, 250, 1);
-  border: 0.5px solid rgba(223, 226, 228, 1);
-  border-radius: 12px;
+  border: ${({ open }) => open ? 'none' : '0.5px solid rgba(223, 226, 228, 1)'};
+  border-radius: ${({ open }) => open ? '12px 12px 0 0' : '12px'};
   font-size: 16px;
   color: #495057;
   font-family: inherit;
   font-weight: 500;
-  transition: border 0.2s, background 0.2s;
+  // transition: border 0.2s, background 0.2s, border-radius 0.2s;
   box-shadow: none;
   justify-content: space-between;
   position: relative;
 
   &:hover, &:focus {
-    border: 0.5px solid #bdbdbd;
+    border: ${({ open }) => open ? 'none' : '0.5px solid #bdbdbd'};
+    background: #fff;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: none;
+  }
+  &:active {
+    outline: none;
+    box-shadow: none;
+  }
+  &:hover {
     background: #fff;
   }
 `; 

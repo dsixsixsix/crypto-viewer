@@ -15,6 +15,6 @@ export const SearchInput = styled.input`
   }
 
   &:focus {
-    border-color: #4CAF50;
+    border-color: #000;
   }
 `; 
