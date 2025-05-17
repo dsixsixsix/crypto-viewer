@@ -9,6 +9,7 @@ export const SearchInput = styled.input`
   outline: none;
   transition: all 0.3s ease;
   background-color: white;
+  color: #000;
 
   &:hover {
     border-color: #666;

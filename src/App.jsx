@@ -8,6 +8,9 @@ import SearchContainer from './components/ui/SearchContainer'
 import CardsList from './components/ui/CardsList'
 import RetryButton from './components/ui/RetryButton'
 
+const API_KEY = import.meta.env.VITE_COINGECKO_API_KEY
+const API_BASE_URL = 'https://api.coingecko.com/api/v3'
+
 function App() {
   const [cryptos, setCryptos] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -16,23 +19,62 @@ function App() {
   const [error, setError] = useState(null)
 
   const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      loadPopularCryptos()
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get(`https://api.coingecko.com/api/v3/search?query=${searchQuery}`)
+      
+      // Получаем список криптовалют по поисковому запросу
+      const response = await axios.get(`${API_BASE_URL}/search?query=${searchQuery.trim()}`, {
+        headers: {
+          'x-cg-api-key': API_KEY
+        }
+      })
+
+      if (!response.data.coins || response.data.coins.length === 0) {
+        setCryptos([])
+        setError('No cryptocurrencies found matching your search.')
+        return
+      }
+
+      // Получаем ID найденных криптовалют
       const cryptoIds = response.data.coins.map(coin => coin.id).join(',')
+
+      // Получаем актуальные цены и данные для графика
       const pricesResponse = await axios.get(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=${selectedCurrency.toLowerCase()}&include_24hr_change=true`
+        `${API_BASE_URL}/coins/markets?vs_currency=${selectedCurrency.toLowerCase()}&ids=${cryptoIds}&order=market_cap_desc&per_page=20&page=1&sparkline=true&price_change_percentage=24h`,
+        {
+          headers: {
+            'x-cg-api-key': API_KEY
+          }
+        }
       )
-      const cryptosWithPrices = response.data.coins.map(coin => ({
-        ...coin,
-        price: pricesResponse.data[coin.id]?.[selectedCurrency.toLowerCase()],
-        priceChange24h: pricesResponse.data[coin.id]?.[`${selectedCurrency.toLowerCase()}_24h_change`]
-      }))
-      setCryptos(cryptosWithPrices)
+
+      // Объединяем данные поиска с актуальными ценами и графиком
+      const searchResults = response.data.coins.map(coin => {
+        const marketData = pricesResponse.data.find(market => market.id === coin.id) || {}
+        return {
+          id: coin.id,
+          name: coin.name,
+          symbol: coin.symbol,
+          image: coin.large,
+          current_price: marketData.current_price || 0,
+          price_change_percentage_24h: marketData.price_change_percentage_24h || 0,
+          market_cap: marketData.market_cap || 0,
+          market_cap_rank: coin.market_cap_rank || 0,
+          sparkline_in_7d: marketData.sparkline_in_7d || { price: [] }
+        }
+      })
+
+      setCryptos(searchResults)
     } catch (err) {
-      setError('Failed to fetch cryptocurrency data. Please try again.')
       console.error('Error fetching data:', err)
+      setError('Failed to fetch cryptocurrency data. Please try again.')
+      setCryptos([])
     } finally {
       setLoading(false)
     }
@@ -42,19 +84,23 @@ function App() {
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+      const response = await axios.get(`${API_BASE_URL}/coins/markets`, {
         params: {
           vs_currency: selectedCurrency.toLowerCase(),
           order: 'market_cap_desc',
           per_page: 20,
           page: 1,
           sparkline: true
+        },
+        headers: {
+          'x-cg-api-key': API_KEY
         }
       })
       setCryptos(response.data)
     } catch (err) {
-      setError('Failed to fetch cryptocurrency data. Please try again.')
       console.error('Error fetching data:', err)
+      setError('Failed to fetch cryptocurrency data. Please try again.')
+      setCryptos([])
     } finally {
       setLoading(false)
     }

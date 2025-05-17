@@ -17,7 +17,7 @@ export const Button = styled.button`
 
   &:focus,
   &:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
+    outline: none;
   }
 `;
 
@@ -36,6 +36,12 @@ export const SearchButton = styled(Button)`
 
   &:hover {
     background-color: rgba(203, 206, 208, 1);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
   }
 
   &:disabled {

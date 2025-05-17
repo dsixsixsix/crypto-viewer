@@ -134,6 +134,9 @@ const PriceChange = styled.div`
   color: ${props => props.isPositive ? 'rgba(33, 191, 115, 1)' : 'rgba(217, 4, 41, 1)'};
 `
 
+const API_KEY = import.meta.env.VITE_COINGECKO_API_KEY
+const API_BASE_URL = 'https://api.coingecko.com/api/v3'
+
 function CryptoPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -147,10 +150,19 @@ function CryptoPage() {
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get(`https://api.coingecko.com/api/v3/search?query=${searchQuery}`)
+      const response = await axios.get(`${API_BASE_URL}/search?query=${searchQuery}`, {
+        headers: {
+          'x-cg-api-key': API_KEY
+        }
+      })
       const cryptoIds = response.data.coins.map(coin => coin.id).join(',')
       const pricesResponse = await axios.get(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoIds}&vs_currencies=${selectedCurrency.toLowerCase()}&include_24hr_change=true`
+        `${API_BASE_URL}/simple/price?ids=${cryptoIds}&vs_currencies=${selectedCurrency.toLowerCase()}&include_24hr_change=true`,
+        {
+          headers: {
+            'x-cg-api-key': API_KEY
+          }
+        }
       )
       const cryptosWithPrices = response.data.coins.map(coin => ({
         ...coin,
@@ -170,13 +182,16 @@ function CryptoPage() {
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+      const response = await axios.get(`${API_BASE_URL}/coins/markets`, {
         params: {
           vs_currency: selectedCurrency.toLowerCase(),
           order: 'market_cap_desc',
           per_page: 20,
           page: 1,
           sparkline: true
+        },
+        headers: {
+          'x-cg-api-key': API_KEY
         }
       })
       setCryptos(response.data)

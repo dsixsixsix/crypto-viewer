@@ -158,6 +158,9 @@ const Timeline = ({ data, width, padding, range }) => {
   );
 };
 
+const API_KEY = import.meta.env.VITE_COINGECKO_API_KEY
+const API_BASE_URL = 'https://api.coingecko.com/api/v3'
+
 const Chart = ({ symbol = '', currency = 'usd' }) => {
   const [range, setRange] = useState('1h');
   const [prices, setPrices] = useState([]);
@@ -172,10 +175,10 @@ const Chart = ({ symbol = '', currency = 'usd' }) => {
     const selectedRange = ranges.find(r => r.value === range) || ranges[0];
     // Маппинг диапазонов на параметры CoinGecko
     let days = '1';
-    let interval = 'hourly';
-    if (range === '1h') { days = '1'; interval = 'minutely'; }
-    if (range === '24h') { days = '1'; interval = 'hourly'; }
-    if (range === '7') { days = '7'; interval = 'hourly'; }
+    let interval;
+    if (range === '1h') { days = '1'; }
+    if (range === '24h') { days = '1'; }
+    if (range === '7') { days = '7'; }
     if (range === '30') { days = '30'; interval = 'daily'; }
     if (range === '180') { days = '180'; interval = 'daily'; }
     if (range === '365') { days = '365'; interval = 'daily'; }
@@ -187,7 +190,7 @@ const Chart = ({ symbol = '', currency = 'usd' }) => {
       try {
         // symbol теперь это id монеты (например, 'bitcoin')
         const proxy = 'https://thingproxy.freeboard.io/fetch/';
-        const url = proxy + `https://api.coingecko.com/api/v3/coins/${symbol.toLowerCase()}/market_chart`;
+        const url = proxy + `${API_BASE_URL}/coins/${symbol.toLowerCase()}/market_chart`;
         const params = {
           vs_currency: currency.toLowerCase(),
           days,
